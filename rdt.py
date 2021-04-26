@@ -11,7 +11,18 @@ BUFSIZ = 1024
 lossRate = 0
 timeout = 0
 Port = 8008
+rcvPort = 8009
+rcvIP = "127.0.0.1"
+rcvAdd = (rcvIP,rcvPort)
+
+def SocketAssign():
+    try:
+        sd = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+    except:
+        return
 def RDT():
+    current = 0
+    winSize = 4
     return
 def SendData():
     return
