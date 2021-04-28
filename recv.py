@@ -1,10 +1,12 @@
 import socket
 import hashlib
+import pickle
+
 hostname = socket.gethostname()
 ip = socket.gethostbyname(hostname)
 from collections import namedtuple
 Packet = namedtuple("Packet", ["SeqN","Data", "CheckSum"])
-
+Ack = namedtuple("Ack", ["Ack"])
 BUFSIZ = 2048
 # rdt vars
 lossRate = 0
@@ -16,7 +18,7 @@ rcvAdd = (rcvIP,rcvPort)
 sd = None
 
 def CheckSum(Data):
-    hash = hashlib.md5(Data)
+    hash = hashlib.md5(Data).digest()
     return hash
 
 def SocketAssign():
@@ -32,15 +34,34 @@ def RDT():
     SocketAssign()
     current = 0
     winSize = 4
+    filename = RecvData()
+    Data = []
     while(True):
-        print(RecvData())
-        SendData()
+        rmsg = RecvData()
+        if(rmsg==b'FIN'):
+            SendData(b'FIN')
+            break
+        data = pickle.loads(rmsg)
+        print(data)
+        msg = data.Data.decode("utf-8")
+        print(msg)
+        chk = CheckSum(data.Data)
+        # print(chk)
+        # print(data.CheckSum)
+        if chk==data.CheckSum:
+            print("Valid Checksum")
+            Data.append(msg)
+        else:
+            print("Invalid Checksum")
+        ack = pickle.dumps(Ack(data.SeqN))
+        SendData(ack)
+    Output = " ".join(Data)
+    print("Message Received:", Output)
     return
-def SendData():
+def SendData(message):
+    sd.sendto(message, rcvAdd)
     return
 def RecvData():
     (rmsg, peer) = sd.recvfrom(2048)
-    Data = Packet(tuple.to_bytes())
-    Data.CheckSum = CheckSum(Data.Data)
     return rmsg
 RDT()
