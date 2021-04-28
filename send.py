@@ -1,13 +1,9 @@
 import socket
-from tkinter import *
-from tkinter import messagebox
 import hashlib
 import os
-import struct
 import pickle
-hostname = socket.gethostname()
-ip = socket.gethostbyname(hostname)
 from collections import namedtuple
+
 Packet = namedtuple("Packet", ["SeqN","Data","CheckSum"])
 Ack = namedtuple("Ack", ["Ack"])
 
@@ -88,15 +84,13 @@ def RDT():
     current = 0
     winSize = 4
     # Data = SplitFile()
-    Data = ["Hello","Please","Send Me","the CN","Assignment"]
+    Data = ["Hello!","Please","Send Me","the CN","Assignment","18K-0169","Syed Abdullah Muzaffar","CS-6H"]
     SendData(filename.encode('utf-8'))
-    # Data = list(map(bytes, DataSrc))
     for i in range(len(Data)):
         data = bytes(Data[i],'utf-8')
         chk = CheckSum(data)
         pkt = Packet(i,data,chk)
         bpkt = pickle.dumps(pkt)
-        # msg = struct.pack((i,data,CheckSum(data)))
         while(True):
             try:
                 SendData(bpkt)
@@ -144,18 +138,3 @@ def isACK(rcvpkt,ack):
     return rcvpkt[0]==ack
 
 RDT()
-
-
-# def on_closing():
-#     if messagebox.askokcancel("Quit", "Do you want to quit?"):
-#         mainWindow.destroy()
-
-# # GUI
-# mainWindow = Tk()
-# mainWindow.title('RDT3 - Sender')
-# configFrame = Frame(mainWindow)
-# configFrame.grid(row=0)
-# SendButton = Button(configFrame, text='Send Data', width=25, command=RDT)
-# SendButton.grid(row=0,column=0)
-# mainWindow.protocol("WM_DELETE_WINDOW", on_closing)
-# # mainWindow.mainloop()

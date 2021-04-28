@@ -1,14 +1,13 @@
 import socket
 import hashlib
 import pickle
-
-hostname = socket.gethostname()
-ip = socket.gethostbyname(hostname)
 from collections import namedtuple
+
 Packet = namedtuple("Packet", ["SeqN","Data", "CheckSum"])
 Ack = namedtuple("Ack", ["Ack"])
-BUFSIZ = 2048
+
 # rdt vars
+BUFSIZ = 2048
 lossRate = 0
 timeout = 0
 Port = 8009
@@ -58,10 +57,13 @@ def RDT():
     Output = " ".join(Data)
     print("Message Received:", Output)
     return
+
 def SendData(message):
     sd.sendto(message, rcvAdd)
     return
+
 def RecvData():
     (rmsg, peer) = sd.recvfrom(2048)
     return rmsg
+
 RDT()
