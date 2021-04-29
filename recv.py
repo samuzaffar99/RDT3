@@ -1,15 +1,17 @@
 import socket
 import hashlib
 import pickle
+import random
 from collections import namedtuple
-
+import time
+import random
 Packet = namedtuple("Packet", ["SeqN","Data", "CheckSum"])
 Ack = namedtuple("Ack", ["Ack"])
 
 # rdt vars
-BUFSIZ = 2048
-lossRate = 0
-timeout = 0
+BUFSIZ = 1024
+lossRate = 0.4
+timeout = 2
 Port = 8009
 rcvPort = 8008
 rcvIP = "127.0.0.1"
@@ -31,15 +33,21 @@ def SocketAssign():
 
 def RDT():
     SocketAssign()
-    current = 0
-    winSize = 4
+    # current = 0
+    # winSize = 4
     filename = RecvData()
     Data = []
     while(True):
         rmsg = RecvData()
+        # Transfer Complete
         if(rmsg==b'FIN'):
             SendData(b'FIN')
             break
+        # Simulate Loss
+        if(random.random()<lossRate):
+            print("Client Not Responding/Dropping Packet")
+            time.sleep(timeout+1)
+            continue
         data = pickle.loads(rmsg)
         print(data)
         msg = data.Data.decode("utf-8")
@@ -63,7 +71,7 @@ def SendData(message):
     return
 
 def RecvData():
-    (rmsg, peer) = sd.recvfrom(2048)
+    (rmsg, peer) = sd.recvfrom(BUFSIZ)
     return rmsg
 
 RDT()

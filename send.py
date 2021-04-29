@@ -2,6 +2,8 @@ import socket
 import hashlib
 import os
 import pickle
+import random
+import time
 from collections import namedtuple
 
 Packet = namedtuple("Packet", ["SeqN","Data","CheckSum"])
@@ -10,11 +12,12 @@ Ack = namedtuple("Ack", ["Ack"])
 # Todo
 # 1-Implement Timeout
 # 2-Implement Reading from File
+# 3-Implement GoBackN or Slective Repeat/ Currently using Stop and Wait
 
-BUFSIZ = 2048
 # rdt vars
+BUFSIZ = 1024
 lossRate = 0
-timeout = 0
+timeout = 2
 Port = 8008
 rcvPort = 8009
 rcvIP = "127.0.0.1"
@@ -29,31 +32,13 @@ def CheckSum(Data):
     hash = hashlib.md5(Data).digest()
     return hash
 
-# def build_pkts(file_data):
-#     """Takes raw data to be sent and builds a list of pkt named tuples"""
-#     seq_num = 0
-#     pkts = []
-#     mss= 500
-#     HEADER_LEN = 8
-#     sent = 0
-#     to_send = min(mss - HEADER_LEN, len(file_data) - sent)
-#     while to_send > 0:
-#         # Build a pkt named tuple and add it to the list of packets
-#         pkts.append(Packet(SeqN = seq_num, CheckSum = CheckSum(file_data[sent:sent + to_send]), Data = file_data[sent:sent + to_send]))
-#         sent += to_send
-#         to_send = min(mss - HEADER_LEN, len(file_data) - sent)
-#         seq_num += 1
-
-#     # Newly built list of pkts
-#     return pkts
-
 def SplitFile():
     try:
         file = open(abs_file_path, 'rb')
         Data = file.read()
         file.close()
         return Data
-    # ChunkSize = 1024
+    # ChunkSize = 512
     # SplitData = []
     # fpath = "send/1.png"
     # try:
@@ -74,35 +59,60 @@ def SocketAssign():
     try:
         sd = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
         sd.bind(("localhost",Port))
-        # sd.setblocking(0)
+        sd.setblocking(0)
     except:
         print("Socket Assignment Failed!")
         return
 
 def RDT():
     SocketAssign()
-    current = 0
-    winSize = 4
+    # current = 0
+    # winSize = 4
     # Data = SplitFile()
     Data = ["Hello!","Please","Send Me","the CN","Assignment","18K-0169","Syed Abdullah Muzaffar","CS-6H"]
     SendData(filename.encode('utf-8'))
+
     for i in range(len(Data)):
+        # Create Packet and Convert into bytes
         data = bytes(Data[i],'utf-8')
         chk = CheckSum(data)
         pkt = Packet(i,data,chk)
         bpkt = pickle.dumps(pkt)
         while(True):
             try:
+                # Send Packet
                 SendData(bpkt)
-                print("Sent#", i)
+                print("Sent Packet#", i)
             except:
                 print("Error Sending Data")
-            ack = RecvData()
+            # Receive Ack
+            start = time.time()
+            tflag = 0
+            while(True):
+                try:
+                    if(time.time()-start>=timeout):
+                        print("Timeout!")
+                        tflag=1
+                        break
+                    ack, peer = sd.recvfrom(BUFSIZ)
+                    break
+                except OSError:
+                    # print("No Data")
+                    continue
+            if(tflag==1):
+                continue
+
+            # time.sleep(timeout)
             Resp = pickle.loads(ack)
             print(Resp)
             if(Resp.Ack==i):
+                # Correct Ack Received
                 break
+            else:
+                # Wrong Ack Received
+                continue
     print("All Data Sent")
+    sd.setblocking(1)
     while(True):
         SendData(b'FIN')
         Resp = RecvData()
@@ -116,7 +126,7 @@ def SendData(message):
     return
 
 def RecvData():
-    (rmsg, peer) = sd.recvfrom(1024)
+    (rmsg, peer) = sd.recvfrom(BUFSIZ)
     return rmsg
 
 def rdt_send(data,ack):
@@ -125,7 +135,7 @@ def rdt_send(data,ack):
     udt_send(sndpkt)
     # start_timer()
 def rdt_rcv(rcvpkt):
-    return sd.recvfrom(1024)
+    return sd.recvfrom(BUFSIZ)
 def udt_send(pkt):
     sd.sendto(pkt, rcvAdd)
 
