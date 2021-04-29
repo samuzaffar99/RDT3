@@ -16,44 +16,20 @@ Ack = namedtuple("Ack", ["Ack"])
 
 # rdt vars
 BUFSIZ = 1024
-lossRate = 0
+lossRate = 0.3 # not needed
 timeout = 2
 Port = 8008
 rcvPort = 8009
 rcvIP = "127.0.0.1"
 rcvAdd = (rcvIP,rcvPort)
 sd = None
-filename = "1.png"
-script_dir = os.path.dirname(__file__) #<-- absolute dir the script is in
-rel_path = "send/" + filename
-abs_file_path = os.path.join(script_dir, rel_path)
 
+# Calculate md5 hash
 def CheckSum(Data):
     hash = hashlib.md5(Data).digest()
     return hash
 
-def SplitFile():
-    try:
-        file = open(abs_file_path, 'rb')
-        Data = file.read()
-        file.close()
-        return Data
-    # ChunkSize = 512
-    # SplitData = []
-    # fpath = "send/1.png"
-    # try:
-    #     file = open(abs_file_path,'rb')
-    #     print("true1")
-    #     while(file):
-    #         SplitData.append(file.read(ChunkSize))
-    #     print("true2")
-    #     file.close()
-    #     print("File Split!")
-    #     return SplitData
-    except:
-        print("Error Reading File!")
-        return None
-
+# Assign and bind a socket
 def SocketAssign():
     global sd
     try:
@@ -66,8 +42,6 @@ def SocketAssign():
 
 def RDT():
     SocketAssign()
-    # current = 0
-    # winSize = 4
     # Data = SplitFile()
     Data = ["Hello!","Please","Send Me","the CN","Assignment","18K-0169","Syed Abdullah Muzaffar","CS-6H"]
     SendData(filename.encode('utf-8'))
@@ -90,6 +64,7 @@ def RDT():
             tflag = 0
             while(True):
                 try:
+                    # Check timer
                     if(time.time()-start>=timeout):
                         print("Timeout!")
                         tflag=1
@@ -101,8 +76,6 @@ def RDT():
                     continue
             if(tflag==1):
                 continue
-
-            # time.sleep(timeout)
             Resp = pickle.loads(ack)
             print(Resp)
             if(Resp.Ack==i):
@@ -129,22 +102,56 @@ def RecvData():
     (rmsg, peer) = sd.recvfrom(BUFSIZ)
     return rmsg
 
-def rdt_send(data,ack):
-    chk = CheckSum(data)
-    sndpkt = makepkt(ack,data,chk)
-    udt_send(sndpkt)
-    # start_timer()
-def rdt_rcv(rcvpkt):
-    return sd.recvfrom(BUFSIZ)
-def udt_send(pkt):
-    sd.sendto(pkt, rcvAdd)
 
-def chksum():
-    return 0
-def makepkt(ack,data,chksum):
-    return (ack,data,chksum)
 
-def isACK(rcvpkt,ack):
-    return rcvpkt[0]==ack
+
+# DEPRECATED
+
+# def rdt_send(data,ack):
+#     chk = CheckSum(data)
+#     sndpkt = makepkt(ack,data,chk)
+#     udt_send(sndpkt)
+#     # start_timer()
+# def rdt_rcv(rcvpkt):
+#     return sd.recvfrom(BUFSIZ)
+# def udt_send(pkt):
+#     sd.sendto(pkt, rcvAdd)
+
+# def chksum():
+#     return 0
+# def makepkt(ack,data,chksum):
+#     return (ack,data,chksum)
+
+# def isACK(rcvpkt,ack):
+#     return rcvpkt[0]==ack
+
+filename = "1.png"
+script_dir = os.path.dirname(__file__) #<-- absolute dir the script is in
+rel_path = "send/" + filename
+abs_file_path = os.path.join(script_dir, rel_path)
+
+# deprecated fun for reading a file
+def SplitFile():
+    try:
+        file = open(abs_file_path, 'rb')
+        Data = file.read()
+        file.close()
+        return Data
+    # ChunkSize = 512
+    # SplitData = []
+    # fpath = "send/1.png"
+    # try:
+    #     file = open(abs_file_path,'rb')
+    #     print("true1")
+    #     while(file):
+    #         SplitData.append(file.read(ChunkSize))
+    #     print("true2")
+    #     file.close()
+    #     print("File Split!")
+    #     return SplitData
+    except:
+        print("Error Reading File!")
+        return None
+
 
 RDT()

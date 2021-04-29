@@ -10,18 +10,20 @@ Ack = namedtuple("Ack", ["Ack"])
 
 # rdt vars
 BUFSIZ = 1024
-lossRate = 0.4
-timeout = 2
+lossRate = 0.3
+timeout = 2 # not needed
 Port = 8009
 rcvPort = 8008
 rcvIP = "127.0.0.1"
 rcvAdd = (rcvIP,rcvPort)
 sd = None
 
+# Calculate md5 hash
 def CheckSum(Data):
     hash = hashlib.md5(Data).digest()
     return hash
 
+# Assign and bind a socket
 def SocketAssign():
     try:
         global sd
@@ -38,8 +40,9 @@ def RDT():
     filename = RecvData()
     Data = []
     while(True):
+        # Blocking wait for Receive
         rmsg = RecvData()
-        # Transfer Complete
+        # Check if Transfer Complete
         if(rmsg==b'FIN'):
             SendData(b'FIN')
             break
@@ -48,6 +51,7 @@ def RDT():
             print("Client Not Responding/Dropping Packet")
             time.sleep(timeout+1)
             continue
+        # Deserialize the data
         data = pickle.loads(rmsg)
         print(data)
         msg = data.Data.decode("utf-8")
@@ -55,11 +59,16 @@ def RDT():
         chk = CheckSum(data.Data)
         # print(chk)
         # print(data.CheckSum)
+        # Verify Checksum and duplicate packet
         if chk==data.CheckSum:
+            if(data.SeqN<len(Data)):
+                print("Duplicate Packet!")
+                continue
             print("Valid Checksum")
             Data.append(msg)
         else:
             print("Invalid Checksum")
+        # Create and Send Ack
         ack = pickle.dumps(Ack(data.SeqN))
         SendData(ack)
     Output = " ".join(Data)
